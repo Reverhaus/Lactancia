@@ -1,0 +1,20 @@
+{
+"name": "Control de Bebé - Seguimiento Diario",
+"short_name": "BebéApp",
+"description": "Aplicación PWA para el registro de lactancia, cambio de pañales y horas de sueño del bebé.",
+"start_url": "./index.html",
+"scope": "./",
+"display": "standalone",
+"orientation": "portrait",
+"background_color": "#FAF7F5",
+"theme_color": "#FAF7F5",
+"lang": "es",
+"icons": [
+{
+"src": "./icons/icon.svg",
+"sizes": "any",
+"type": "image/svg+xml",
+"purpose": "any maskable"
+}
+]
+}
