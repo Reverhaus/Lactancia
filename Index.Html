@@ -1,0 +1,360 @@
+﻿<!DOCTYPE html>
+<html lang="es" class="h-full bg-stone-50 text-slate-800">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Control de Bebé</title>
+    
+    <!-- PWA Web App Capabilities -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#FAF7F5">
+
+
+    <!-- Enlace al Web Manifest externo -->
+    <link rel="manifest" href="./manifest.json">
+
+
+    <!-- CDNs: Tailwind CSS, Dexie IndexedDB, Lucide Icons -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/dexie@3.2.4/dist/dexie.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#fff5f7',
+                            100: '#ffe4e6',
+                            200: '#fecdd3',
+                            500: '#f43f5e',
+                            600: '#e11d48',
+                        },
+                        lactancia: {
+                            light: '#FFF1F2',
+                            DEFAULT: '#FB7185',
+                            dark: '#E11D48',
+                            accent: '#FFE4E6'
+                        },
+                        panal: {
+                            light: '#FEF3C7',
+                            DEFAULT: '#F59E0B',
+                            dark: '#D97706',
+                            accent: '#FEF3C7'
+                        },
+                        sueno: {
+                            light: '#EEF2FF',
+                            DEFAULT: '#6366F1',
+                            dark: '#4F46E5',
+                            accent: '#E0E7FF'
+                        },
+                        cream: {
+                            50: '#FAF7F5',
+                            100: '#F4EFEA',
+                            200: '#E8E0D7'
+                        }
+                    },
+                    boxShadow: {
+                        'soft-pink': '0 12px 30px -8px rgba(251, 113, 133, 0.25)',
+                        'soft-amber': '0 12px 30px -8px rgba(245, 158, 11, 0.25)',
+                        'soft-indigo': '0 12px 30px -8px rgba(99, 102, 241, 0.25)',
+                        'soft-card': '0 8px 24px -4px rgba(148, 163, 184, 0.12)',
+                        'inner-soft': 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.04)'
+                    },
+                    animation: {
+                        'pulse-glow-pink': 'pulseGlowPink 2.2s infinite',
+                        'breathe-soft': 'breatheSoft 2.5s ease-in-out infinite',
+                        'view-slide': 'viewSlideIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                        'float-gentle': 'floatGentle 4s ease-in-out infinite',
+                        'spring-scale': 'springScale 0.22s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
+                    },
+                    keyframes: {
+                        pulseGlowPink: {
+                            '0%, 100%': { boxShadow: '0 0 0 0 rgba(251, 113, 133, 0.4)' },
+                            '50%': { boxShadow: '0 0 0 14px rgba(251, 113, 133, 0)' }
+                        },
+                        breatheSoft: {
+                            '0%, 100%': { transform: 'scale(1)' },
+                            '50%': { transform: 'scale(1.03)' }
+                        },
+                        viewSlideIn: {
+                            '0%': { opacity: '0', transform: 'translateY(10px) scale(0.99)' },
+                            '100%': { opacity: '1', transform: 'translateY(0) scale(1)' }
+                        },
+                        floatGentle: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-5px)' }
+                        },
+                        springScale: {
+                            '0%': { transform: 'scale(0.95)' },
+                            '100%': { transform: 'scale(1)' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+
+    <style>
+        body {
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+            background-color: #FAF7F5;
+        }
+        .pb-safe {
+            padding-bottom: max(env(safe-area-inset-bottom, 1.25rem), 1.25rem);
+        }
+        .pt-safe {
+            padding-top: max(env(safe-area-inset-top, 0.75rem), 0.75rem);
+        }
+        .btn-touch {
+            transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+        .btn-touch:active {
+            transform: scale(0.95);
+        }
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #E2E8F0; border-radius: 99px; }
+
+
+        .glass-card-light {
+            background: rgba(255, 255, 255, 0.88);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 10px 25px -5px rgba(148, 163, 184, 0.08), 0 8px 10px -6px rgba(148, 163, 184, 0.05);
+        }
+        
+        .glass-card-interactive {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(241, 245, 249, 0.9);
+            box-shadow: 0 4px 12px -2px rgba(148, 163, 184, 0.08);
+            transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .glass-card-interactive:active {
+            transform: scale(0.98);
+        }
+        
+        .ambient-blob {
+            position: absolute;
+            border-radius: 9999px;
+            filter: blur(60px);
+            pointer-events: none;
+            opacity: 0.45;
+            z-index: 0;
+        }
+
+
+        @keyframes slideFromRight {
+            0% { opacity: 0; transform: translateX(35px) scale(0.98); }
+            100% { opacity: 1; transform: translateX(0) scale(1); }
+        }
+        @keyframes slideFromLeft {
+            0% { opacity: 0; transform: translateX(-35px) scale(0.98); }
+            100% { opacity: 1; transform: translateX(0) scale(1); }
+        }
+        .animate-slide-right {
+            animation: slideFromRight 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .animate-slide-left {
+            animation: slideFromLeft 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col bg-cream-50 text-slate-800 overflow-hidden select-none relative">
+
+
+    <div class="ambient-blob w-72 h-72 bg-rose-200 -top-10 -left-10 animate-float-gentle"></div>
+    <div class="ambient-blob w-80 h-80 bg-amber-100 top-1/3 -right-20 animate-float-gentle" style="animation-delay: -2s;"></div>
+    <div class="ambient-blob w-72 h-72 bg-indigo-100 -bottom-10 left-10 animate-float-gentle" style="animation-delay: -1s;"></div>
+
+
+    <main id="main-swipe-container" class="flex-1 overflow-y-auto px-4 pt-safe pt-3 pb-36 max-w-lg mx-auto w-full relative z-10">
+
+
+        <!-- VIEW 1: LACTANCIA -->
+        <section id="view-lactancia" class="view-panel space-y-4 animate-view-slide">
+            
+            <div id="lactancia-recommendation" class="hidden bg-rose-50/80 border border-rose-200/70 text-slate-700 rounded-2xl px-4 py-2.5 flex items-center justify-between text-xs shadow-sm">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-7 h-7 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+                        <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
+                    </div>
+                    <div class="flex flex-col leading-tight">
+                        <span class="text-slate-800 font-bold text-xs">Siguiente toma sugerida</span>
+                        <span class="text-slate-400 text-[10px] font-medium">Equilibrio de pechos</span>
+                    </div>
+                </div>
+                <div id="suggested-side-container" class="flex items-center gap-1 font-bold text-xs text-rose-600 bg-white px-3 py-1.5 rounded-xl border border-rose-200/80 shadow-xs shrink-0">
+                    <i id="suggested-arrow-left" data-lucide="arrow-left" class="w-3.5 h-3.5 text-rose-500"></i>
+                    <span id="suggested-side">Derecho</span>
+                    <i id="suggested-arrow-right" data-lucide="arrow-right" class="w-3.5 h-3.5 text-rose-500"></i>
+                </div>
+            </div>
+
+
+            <div id="lactancia-timer-card" class="glass-card-light rounded-3xl p-4 sm:p-6 text-center shadow-soft-pink relative overflow-hidden border border-rose-100 flex flex-col items-center">
+                <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-rose-50 border border-rose-200 text-rose-600 text-xs font-extrabold mb-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse" id="lactancia-ping-dot" style="display:none;"></span>
+                    <span id="lactancia-side-badge">Selecciona un pecho para empezar</span>
+                </div>
+                
+                <div id="lactancia-timer" class="text-[12vw] sm:text-6xl font-mono font-black tracking-tight text-slate-800 my-1 w-full text-center leading-none flex items-center justify-center">
+                    00:00:00
+                </div>
+
+
+                <p id="lactancia-instruction" class="text-xs text-slate-500 font-semibold mt-0.5 mb-4">Toca un pecho para iniciar la toma instantánea</p>
+
+
+                <div class="flex items-center justify-center gap-3 sm:gap-6 w-full max-w-md mx-auto my-2 px-1">
+                    <button id="btn-circle-left" onclick="triggerHaptic(40); toggleLactanciaSide('Izquierdo');" class="btn-touch w-1/2 max-w-[190px] aspect-square rounded-3xl flex flex-col items-center justify-center gap-1.5 p-3 border-4 relative overflow-hidden transition-all duration-300 shadow-md">
+                        <div id="icon-bg-left" class="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center text-current mb-0.5 shadow-sm">
+                            <i data-lucide="arrow-left" class="w-6 h-6"></i>
+                        </div>
+                        <span class="font-black text-sm sm:text-base tracking-tight">Izquierdo</span>
+                        <span id="label-left-state" class="text-[10px] font-extrabold px-2.5 py-1 rounded-full shadow-sm">Iniciar</span>
+                    </button>
+
+
+                    <button id="btn-circle-right" onclick="triggerHaptic(40); toggleLactanciaSide('Derecho');" class="btn-touch w-1/2 max-w-[190px] aspect-square rounded-3xl flex flex-col items-center justify-center gap-1.5 p-3 border-4 relative overflow-hidden transition-all duration-300 shadow-md">
+                        <div id="icon-bg-right" class="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center text-current mb-0.5 shadow-sm">
+                            <i data-lucide="arrow-right" class="w-6 h-6"></i>
+                        </div>
+                        <span class="font-black text-sm sm:text-base tracking-tight">Derecho</span>
+                        <span id="label-right-state" class="text-[10px] font-extrabold px-2.5 py-1 rounded-full shadow-sm">Iniciar</span>
+                    </button>
+                </div>
+            </div>
+
+
+            <div class="space-y-3 pt-1">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xs font-extrabold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                        <i data-lucide="history" class="w-4 h-4 text-rose-500"></i> Historial de Tomas
+                    </h3>
+                    <div class="flex items-center gap-2">
+                        <button onclick="triggerHaptic(20); openManualLactanciaModal();" class="btn-touch text-[11px] font-bold bg-rose-50 text-rose-600 px-2.5 py-1 rounded-full border border-rose-200 flex items-center gap-1 hover:bg-rose-100">
+                            <i data-lucide="plus" class="w-3.5 h-3.5"></i> Manual
+                        </button>
+                        <span id="lactancia-count" class="text-xs font-bold bg-white text-rose-600 px-3 py-1 rounded-full border border-rose-100 shadow-sm">0 hoy</span>
+                    </div>
+                </div>
+                <div id="lactancia-history" class="space-y-2.5 max-h-80 overflow-y-auto pr-0.5"></div>
+            </div>
+        </section>
+
+
+        <!-- VIEW 2: PAÑALES -->
+        <section id="view-panales" class="view-panel hidden space-y-4 animate-view-slide">
+            
+            <div class="glass-card-light rounded-3xl p-5 shadow-soft-amber space-y-4 border border-amber-100">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-xs font-extrabold text-amber-600 uppercase tracking-wider flex items-center gap-1.5">
+                        <i data-lucide="zap" class="w-4 h-4 text-amber-500"></i> Registro Rápido de Pañal
+                    </h2>
+                </div>
+
+
+                <div class="grid grid-cols-3 gap-2.5">
+                    <button onclick="triggerHaptic(30); saveSimplePanal(true, false);" class="btn-touch py-4 bg-gradient-to-b from-sky-50 to-sky-100/80 border-2 border-sky-200 hover:border-sky-400 rounded-2xl flex flex-col items-center gap-1.5 text-sky-700 font-extrabold text-xs shadow-sm">
+                        <div class="w-9 h-9 rounded-xl bg-white flex items-center justify-center shadow-sm text-lg">
+                            💧
+                        </div>
+                        <span>Solo Orina</span>
+                    </button>
+                    
+                    <button onclick="triggerHaptic(40); saveSimplePanal(true, true);" class="btn-touch py-4 bg-gradient-to-b from-amber-100 via-sky-50 to-amber-50 border-2 border-amber-300 hover:border-amber-400 rounded-2xl flex flex-col items-center gap-1.5 text-slate-800 font-extrabold text-xs shadow-soft-amber">
+                        <div class="w-9 h-9 rounded-xl bg-white flex items-center justify-center shadow-sm text-base">
+                            💧💩
+                        </div>
+                        <span>Ambos</span>
+                    </button>
+
+
+                    <button onclick="triggerHaptic(30); saveSimplePanal(false, true);" class="btn-touch py-4 bg-gradient-to-b from-amber-50 to-amber-100/80 border-2 border-amber-200 hover:border-amber-400 rounded-2xl flex flex-col items-center gap-1.5 text-amber-800 font-extrabold text-xs shadow-sm">
+                        <div class="w-9 h-9 rounded-xl bg-white flex items-center justify-center shadow-sm text-lg">
+                            💩
+                        </div>
+                        <span>Solo Caca</span>
+                    </button>
+                </div>
+
+
+                <div class="space-y-1 pt-1">
+                    <label for="panal-notes" class="text-[11px] font-bold text-amber-700/80 flex items-center gap-1">
+                        <i data-lucide="message-square" class="w-3.5 h-3.5 text-amber-500"></i> Comentario / Nota opcional:
+                    </label>
+                    <textarea id="panal-notes" rows="2" placeholder="Escribe aquí algún detalle opcional (color, consistencia...)" class="w-full bg-white border border-amber-200 rounded-2xl p-3 text-xs text-slate-700 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-200/50 resize-none shadow-inner-soft transition-all"></textarea>
+                </div>
+            </div>
+
+
+            <div class="space-y-3 pt-1">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xs font-extrabold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                        <i data-lucide="history" class="w-4 h-4 text-amber-500"></i> Historial de Pañales
+                    </h3>
+                    <span id="panal-count" class="text-xs font-bold bg-white text-amber-700 px-3 py-1 rounded-full border border-amber-200 shadow-sm">0 hoy</span>
+                </div>
+                <div id="panal-history" class="space-y-2.5 max-h-80 overflow-y-auto pr-0.5"></div>
+            </div>
+        </section>
+
+
+        <!-- VIEW 3: SUEÑO -->
+        <section id="view-sueno" class="view-panel hidden space-y-4 animate-view-slide">
+            <div id="sueno-timer-card" class="glass-card-light rounded-3xl p-5 sm:p-6 text-center shadow-soft-indigo relative overflow-hidden border border-indigo-100 flex flex-col items-center justify-center">
+                <div class="inline-flex items-center justify-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-600 text-xs font-extrabold mb-2 mx-auto">
+                    <i data-lucide="moon" class="w-4 h-4"></i> <span id="sueno-status-badge">Bebé Despierto</span>
+                </div>
+                
+                <div id="sueno-timer" class="text-[11vw] sm:text-6xl font-mono font-black tracking-tight text-slate-800 my-2 w-full text-center leading-none flex items-center justify-center">
+                    00:00:00
+                </div>
+
+
+                <div class="mt-4 w-full">
+                    <button id="btn-toggle-sueno" onclick="triggerHaptic(40); toggleSuenoTimer();" class="btn-touch w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold rounded-2xl flex items-center justify-center gap-2 text-xs shadow-soft-indigo">
+                        <i data-lucide="play" class="w-4 h-4"></i> Iniciar Sueño / Siesta
+                    </button>
+                </div>
+            </div>
+
+
+            <div class="space-y-3 pt-1">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xs font-extrabold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                        <i data-lucide="history" class="w-4 h-4 text-indigo-500"></i> Historial de Sueño
+                    </h3>
+                    <span id="sueno-count" class="text-xs font-bold bg-white text-indigo-700 px-3 py-1 rounded-full border border-indigo-200 shadow-sm">0h hoy</span>
+                </div>
+                <div id="sueno-history" class="space-y-2.5 max-h-80 overflow-y-auto pr-0.5"></div>
+            </div>
+        </section>
+
+
+        <!-- VIEW 4: ESTADÍSTICAS & HORARIO DIARIO -->
+        <section id="view-stats" class="view-panel hidden space-y-4 animate-view-slide">
+            
+            <div class="glass-card-light rounded-2xl p-2.5 flex items-center justify-between border border-slate-200/80 shadow-soft-card">
+                <button onclick="triggerHaptic(20); changeStatsDate(-1);" class="btn-touch w-9 h-9 rounded-xl bg-white text-slate-600 flex items-center justify-center border border-slate-200 shadow-sm">
+                    <i data-lucide="chevron-left" class="w-5 h-5"></i>
+                </button>
+
+
+                <div class="relative flex items-center gap-2 cursor-pointer">
+                    <i data-lucide="calendar" class="w-4 h-4 text-emerald-600"></i>
+                    <span id="stats-date-display" class="font-extrabold text-xs text-slate-800 capitalize">Hoy</span>
+                    <input type="date" id="stats-date-picker" onchange="onDatePicked(event)" class="absolute inset-0 o

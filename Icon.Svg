@@ -1,0 +1,15 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <!-- Fondo con los tonos de la aplicación -->
+  <rect width="512" height="512" rx="120" fill="#FAF7F5"/>
+  
+  <!-- Círculo contenedor central -->
+  <circle cx="256" cy="256" r="180" fill="#FFF1F2"/>
+  
+  <!-- Icono de Corazón / Cuidado -->
+  <path d="M256 390s-110-73.3-110-155c0-40.3 32.7-73 73-73 24.3 0 46 11.7 57 30 11-18.3 32.7-30 57-30 40.3 0 73 32.7 73 73 0 81.7-110 155-110 155z" fill="#FB7185"/>
+  
+  <!-- Detalle interior (Biberón / Estrella estilizada) -->
+  <circle cx="256" cy="220" r="35" fill="#FFFFFF"/>
+  <path d="M241 270h30v55h-30z" rx="6" fill="#FFFFFF"/>
+  <path d="M231 270h50v12h-50z" fill="#FFE4E6"/>
+</svg>
